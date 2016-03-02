@@ -1,6 +1,7 @@
 require 'sinatra'
 require "sinatra/multi_route"
 require 'httparty'
+require 'json'
 
 require 'dotenv'
 Dotenv.load
@@ -17,9 +18,10 @@ class ExampleApp < Sinatra::Base
 
   def fetch_user(access_token)
     base_url = "https://my.mlh.io/api/v1/user"
-    qs = URI.encode_www_form({'access_token': access_token}
+    qs = URI.encode_www_form({'access_token': access_token})
 
-    JSON.parse(HTTParty.get("#{base_url}?#{qs}"))
+
+    HTTParty.get("#{base_url}?#{qs}").to_json
   end
 
   get '/' do
@@ -52,6 +54,7 @@ class ExampleApp < Sinatra::Base
     }.to_json
 
     resp = HTTParty.post( base_url, body: body, headers: headers )
-    puts resp['access_token']
+    user = fetch_user(resp['access_token'])
+    return user
   end
 end
