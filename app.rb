@@ -6,7 +6,7 @@ require 'json'
 require 'dotenv'
 Dotenv.load
 
-class ExampleApp < Sinatra::Base
+class MyMLHExampleApp < Sinatra::Base
   register Sinatra::MultiRoute
 
   # Config
@@ -34,8 +34,8 @@ class ExampleApp < Sinatra::Base
   get '/auth/mlh' do  
     # Step 1: Request an Authorization Code from My MLH by directing a user to
     # your app's authorize page.
-    base_url = "https://my.mlh.io/oauth/authorize"
 
+    base_url = "https://my.mlh.io/oauth/authorize"
     qs = URI.encode_www_form(
       'client_id': client_id,
       'redirect_uri': callback,
@@ -60,12 +60,23 @@ class ExampleApp < Sinatra::Base
       'redirect_uri': callback
     }.to_json
 
-    # Step 3: Now we should have an access token which we can use to get the
-    # current user's profile information.  In a production app you would
-    # create a user and save it to your database at this point.
+    unless code
+      # If somehow we got here without a code, tell the user it's an invalid request
+      halt 400  , "Error: No code found"
+    end
 
     resp = HTTParty.post( base_url, body: body, headers: headers )
-    user = fetch_user(resp['access_token'])
-    return user
+
+    if resp.code == 200 # Success response
+      # Step 3: Now we should have an access token which we can use to get the
+      # current user's profile information.  In a production app you would
+      # create a user and save it to your database at this point.
+
+      user = fetch_user(resp['access_token'])
+      return user
+    else
+      # Really you should have better error handling
+      halt 500  , "Error: Internal Server Error"
+    end
   end
 end
